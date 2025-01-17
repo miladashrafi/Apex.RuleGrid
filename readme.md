@@ -59,12 +59,32 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
     ```
 
 ### Excel File Format
+
+> - The Excel file should contain two sheets: Metadata and Rules.  
+> - The Metadata sheet should contain the following columns: `Id`, `Name`, `ClassName`, `GeneralAction`, `ConditionsOperator`, `Priority`.  
+> - The Rules sheet should contain the following columns: `Index`, `Condition_X`, `Action_X`.  
+> - The `X` in `Condition_X` and `Action_X` represents the index of the condition or action.  
+> - The `ConditionsOperator` column in the Metadata sheet should contain one of the following values: `AND`, `OR`.  
+> - The `Priority` column in the Metadata sheet should contain an integer value.  
+> - The `GeneralAction` column in the Metadata sheet should contain one of the following values: `SetAppliedRules`.  
+> - The `Index` column in the Rules sheet should contain an integer value or `#FieldName`/`#Operator` for first two rows.  
+> - The `Condition_X` column in the Rules sheet should contain the condition expression.  
+> - The `Action_X` column in the Rules sheet should contain the action expression.  
+> - The `ClassName` column in the Metadata sheet should contain the class name to which the rules will be applied.  
+> - The `Name` column in the Metadata sheet should contain the name of the rule set.  
+> - The `Id` column in the Metadata sheet should contain a unique identifier for the rule set.  
+> - Conditions and actions can be one or more columns in the Rules sheet.  
+> - The `ConditionsOperator` column in the Metadata sheet should contain the operator to be used for combining conditions.  
+> - The `Priority` column in the Metadata sheet should contain the priority of the rule set.  
+> - Conditions operator can be `Equals`, `GreaterThan`, `LowerThan`.  
+> - Actions operator can be `Set`, `Increase`, `Decrease`.
+
 #### Sheet one (Metadata):
 ![Excel Sheet One](excel-sheet-one.png)
 
 #### Sheet two (Rules):
 ![Excel](excel.png)
-    
+
 ### Running the Application
 
 1. Open the solution in Visual Studio 2022.
@@ -96,7 +116,20 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
     }
     ```
 
-    
+### Workflow Diagram
+
+```mermaid
+graph TD
+    A[Client Request] -->|Upload Rule Set| B[RuleEngineController]
+    B -->|Extract Data from Excel| C[ClosedXML]
+    C -->|Convert to JSON| D[RuleSetDbModel]
+    D -->|Store in MongoDB| E[MongoDbService]
+    A -->|Apply Rules| B
+    B -->|Fetch Rules from MongoDB| E
+    E -->|Apply Conditions and Actions| F[Rule Processor]
+    F -->|Return Modified Objects| G[Client Response]
+```
+
 ## Example Usage
 
 ### Uploading a Rule Set
@@ -121,6 +154,9 @@ This project is licensed under the MIT License.
 
 For any questions or support, please contact the project maintainers.
 
+@miladashrafi
+
 ---
 
 This README file provides a comprehensive overview of the RuleEngine project, including its features, technologies used, project structure, and instructions for getting started.
+
