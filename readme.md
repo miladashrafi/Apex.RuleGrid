@@ -25,7 +25,6 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
 ### Controllers
 
 - **RuleEngineController.cs**: Handles the uploading of rule sets and applying rules to objects.
-- **NewRuleEngineController.cs**: Contains methods for converting Excel data to JSON and converting JSON to database models.
 
 ### Services
 
