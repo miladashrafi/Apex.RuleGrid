@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 
-namespace RuleEngine.Models;
+namespace RuleGrid.Models;
 public class MetaData
 {
     [BsonId]

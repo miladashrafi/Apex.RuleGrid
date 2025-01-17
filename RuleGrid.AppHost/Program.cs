@@ -1,5 +1,5 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.RuleEngine>("ruleengine");
+builder.AddProject<Projects.RuleGrid>("rule-grid");
 
 builder.Build().Run();

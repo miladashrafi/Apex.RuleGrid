@@ -1,7 +1,7 @@
 ﻿using Swashbuckle.AspNetCore.Filters;
 using System.Text.Json;
 
-namespace RuleEngine.Models;
+namespace RuleGrid.Models;
 
 public class RuleApplicationRequest : IExamplesProvider<RuleApplicationRequest>
 {

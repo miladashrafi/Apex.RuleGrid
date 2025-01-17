@@ -1,8 +1,8 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
-using RuleEngine.Models;
+using RuleGrid.Models;
 
-namespace RuleEngine;
+namespace RuleGrid;
 public class MongoDbService
 {
     private readonly IMongoCollection<RuleSetDbModel> _collection;

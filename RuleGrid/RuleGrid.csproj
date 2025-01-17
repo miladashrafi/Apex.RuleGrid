@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RuleEngine.ServiceDefaults\RuleEngine.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\RuleGrid.ServiceDefaults\RuleGrid.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

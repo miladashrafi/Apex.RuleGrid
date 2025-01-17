@@ -1,11 +1,12 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using RuleEngine.Models;
+using RuleGrid;
+using RuleGrid.Models;
 using Swashbuckle.AspNetCore.Filters;
 using System.Text.Json;
 
-namespace RuleEngine.Controllers;
+namespace RuleGrid.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]

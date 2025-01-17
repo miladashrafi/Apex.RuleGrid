@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RuleEngine\RuleEngine.csproj" />
+    <ProjectReference Include="..\RuleGrid\RuleGrid.csproj" />
   </ItemGroup>
 
 </Project>

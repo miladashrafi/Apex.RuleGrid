@@ -1,4 +1,4 @@
-﻿namespace RuleEngine.Models;
+﻿namespace RuleGrid.Models;
 
 public class Rule
 {

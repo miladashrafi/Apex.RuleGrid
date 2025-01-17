@@ -1,8 +1,8 @@
-# RuleEngine Project
+# RuleGrid
 
 ## Overview
 
-The RuleEngine project is a .NET 8 application designed to manage and apply business rules stored in MongoDB. It provides functionality to upload rule sets from Excel files, convert them to JSON, and store them in a MongoDB database. Additionally, it allows applying these rules to a set of objects.
+The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage and apply business rules stored in MongoDB. It provides functionality to upload rule sets from Excel files, convert them to JSON, and store them in a MongoDB database. Additionally, it allows applying these rules to a set of objects.
 
 ## Features
 
@@ -24,7 +24,7 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
 
 ### Controllers
 
-- **RuleEngineController.cs**: Handles the uploading of rule sets and applying rules to objects.
+- **RuleGridController.cs**: Handles the uploading of rule sets and applying rules to objects.
 
 ### Services
 
@@ -94,13 +94,13 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
 ### API Endpoints
 
 #### Upload Rule Set
-- **Endpoint**: `POST /api/v1/ruleengine/upload-ruleset`
+- **Endpoint**: `POST /api/v1/RuleGrid/upload-ruleset`
 - **Description**: Uploads an Excel file containing rule sets.
 - **Request**: `multipart/form-data` with one or more files.
 
 #### Apply Rules
 
-- **Endpoint**: `POST /api/v1/ruleengine/apply-rules`
+- **Endpoint**: `POST /api/v1/RuleGrid/apply-rules`
 - **Description**: Applies rules to a set of objects.
 - **Request**: JSON body containing `ClassName` and `Objects`.
 
@@ -120,7 +120,7 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
 
 ```mermaid
 graph TD
-    A[Client Request] -->|Upload Rule Set| B[RuleEngineController]
+    A[Client Request] -->|Upload Rule Set| B[RuleGridController]
     B -->|Extract Data from Excel| C[ClosedXML]
     C -->|Convert to JSON| D[RuleSetDbModel]
     D -->|Store in MongoDB| E[MongoDbService]
@@ -134,12 +134,12 @@ graph TD
 
 ### Uploading a Rule Set
 
-1. Use a tool like Postman to send a `POST` request to `/api/v1/ruleengine/upload-ruleset`.
+1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleGrid/upload-ruleset`.
 2. Attach the Excel file(s) containing the rule sets.
 
 ### Applying Rules
 
-1. Use a tool like Postman to send a `POST` request to `/api/v1/ruleengine/apply-rules`.
+1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleGrid/apply-rules`.
 2. Provide the `ClassName` and `Objects` in the request body.
 
 ## Contributing
@@ -158,5 +158,5 @@ For any questions or support, please contact the project maintainers.
 
 ---
 
-This README file provides a comprehensive overview of the RuleEngine project, including its features, technologies used, project structure, and instructions for getting started.
+This README file provides a comprehensive overview of the RuleGrid project, including its features, technologies used, project structure, and instructions for getting started.
 
