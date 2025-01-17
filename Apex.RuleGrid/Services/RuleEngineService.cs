@@ -6,13 +6,16 @@ using System.Text.Json;
 
 namespace Apex.RuleGrid.Services
 {
+
     public class RuleEngineService
     {
         private readonly MongoDbService _dbService;
+        private readonly ReteNetwork _reteNetwork;
 
         public RuleEngineService(MongoDbService dbService)
         {
             _dbService = dbService;
+            _reteNetwork = new ReteNetwork();
         }
         private static string ConvertExcelToJson(XLWorkbook workbook)
         {
@@ -82,9 +85,40 @@ namespace Apex.RuleGrid.Services
                 using var workbook = new XLWorkbook(stream);
                 var json = ConvertExcelToJson(workbook);
                 var dbModel = ConvertToDbModel(json);
+                _reteNetwork.AddRuleSet(dbModel);
                 await _dbService.SaveJsonAsync(dbModel);
             }
         }
+
+        public async Task<IList<JsonElement>> ApplyRulesWithRete(RuleApplicationRequest request)
+        {
+            var ruleSets = await _dbService.GetRulesAsync(request.ClassName);
+            if (!ruleSets.Any()) return request.Objects;
+
+            var results = new List<JsonElement>();
+
+            foreach (var ruleSet in ruleSets)
+            {
+                _reteNetwork.AddRuleSet(ruleSet);
+
+                foreach (var obj in request.Objects)
+                {
+                    var jsonObject = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.GetRawText());
+                    if (jsonObject == null) continue;
+
+                    var matchedRules = _reteNetwork.Match(jsonObject, ruleSet.Metadata.ConditionsOperator);
+                    foreach (var rule in matchedRules)
+                    {
+                        ApplyActions(ruleSet, rule, jsonObject, obj);
+                    }
+
+                    results.Add(JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(jsonObject)));
+                }
+            }
+
+            return results;
+        }
+
 
         public async Task<IList<JsonElement>> ApplyRules([FromBody] RuleApplicationRequest request)
         {
@@ -125,19 +159,19 @@ namespace Apex.RuleGrid.Services
 
             foreach (var condition in rule.Conditions)
             {
-                var fieldName = GetRuleField(ruleSet, condition.Key, "#FieldName");
+                var fieldName = RuleSetDbModel.GetRuleField(ruleSet.Rules, condition.Key, "#FieldName");
                 if (string.IsNullOrWhiteSpace(fieldName) || !obj.TryGetProperty(fieldName, out var prop))
                 {
                     conditionMet = false;
                     continue;
                 }
 
-                var operatorPhrase = GetRuleField(ruleSet, condition.Key, "#Operator");
+                var operatorPhrase = RuleSetDbModel.GetRuleField(ruleSet.Rules, condition.Key, "#Operator");
                 var conditionValue = condition.Value;
 
                 conditionMet = conditionsOperator == "AND"
-                    ? conditionMet && EvaluateCondition(operatorPhrase, prop, conditionValue)
-                    : conditionMet || EvaluateCondition(operatorPhrase, prop, conditionValue);
+                    ? conditionMet && Rule.EvaluateCondition(operatorPhrase, prop, conditionValue)
+                    : conditionMet || Rule.EvaluateCondition(operatorPhrase, prop, conditionValue);
             }
 
             return conditionMet;
@@ -147,11 +181,11 @@ namespace Apex.RuleGrid.Services
         {
             foreach (var action in rule.Actions)
             {
-                var fieldName = GetRuleField(ruleSet, action.Key, "#FieldName");
+                var fieldName = RuleSetDbModel.GetRuleField(ruleSet.Rules, action.Key, "#FieldName");
                 if (string.IsNullOrWhiteSpace(fieldName) || !obj.TryGetProperty(fieldName, out var prop))
                     continue;
 
-                var operatorPhrase = GetRuleField(ruleSet, action.Key, "#Operator");
+                var operatorPhrase = RuleSetDbModel.GetRuleField(ruleSet.Rules, action.Key, "#Operator");
                 var actionValue = action.Value;
 
                 switch (operatorPhrase)
@@ -178,30 +212,6 @@ namespace Apex.RuleGrid.Services
                     jsonObject["AppliedRules"] = appliedRules.Distinct().ToList();
                 }
             }
-        }
-
-        private static string GetRuleField(RuleSetDbModel ruleSet, string key, string index)
-        {
-            if (key.StartsWith("Condition_", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return ruleSet.Rules.FirstOrDefault(r => r.Index == index)?.Conditions[key] ?? string.Empty;
-            }
-            if (key.StartsWith("Action_", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return ruleSet.Rules.FirstOrDefault(r => r.Index == index)?.Actions[key] ?? string.Empty;
-            }
-            return string.Empty;
-        }
-
-        private static bool EvaluateCondition(string operatorPhrase, JsonElement prop, string conditionValue)
-        {
-            return operatorPhrase switch
-            {
-                "GreaterThan" => int.Parse(prop.GetRawText()) > int.Parse(conditionValue),
-                "LowerThan" => int.Parse(prop.GetRawText()) < int.Parse(conditionValue),
-                "Equals" => prop.ToString() == conditionValue,
-                _ => false,
-            };
         }
 
         private static object ParseValue(JsonElement prop, string value)

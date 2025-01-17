@@ -23,4 +23,11 @@ public class RuleEngineController(RuleEngineService ruleEngineService) : Control
     {
         return Ok(await ruleEngineService.ApplyRules(request));
     }
+
+    [HttpPost("apply-rules-rete")]
+    [SwaggerRequestExample(typeof(RuleApplicationRequest), typeof(RuleApplicationRequest))]
+    public async Task<IActionResult> ApplyRulesRete([FromBody] RuleApplicationRequest request)
+    {
+        return Ok(await ruleEngineService.ApplyRulesWithRete(request));
+    }
 }
