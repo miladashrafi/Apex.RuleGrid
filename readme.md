@@ -58,6 +58,12 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
     }
     ```
 
+### Excel File Format
+#### Sheet one (Metadata):
+![Excel Sheet One](excel-sheet-one.png)
+
+#### Sheet two (Rules):
+![Excel](excel.png)
     
 ### Running the Application
 
@@ -68,7 +74,6 @@ The RuleEngine project is a .NET 8 application designed to manage and apply busi
 ### API Endpoints
 
 #### Upload Rule Set
-
 - **Endpoint**: `POST /api/v1/ruleengine/upload-ruleset`
 - **Description**: Uploads an Excel file containing rule sets.
 - **Request**: `multipart/form-data` with one or more files.
