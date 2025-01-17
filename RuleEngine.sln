@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuleEngine.ServiceDefaults"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AAF59C1E-F501-4508-978C-F7ADF07ED3F0}"
 	ProjectSection(SolutionItems) = preProject
+		excel-sheet-one.png = excel-sheet-one.png
+		excel.png = excel.png
 		readme.md = readme.md
 		Template.xlsx = Template.xlsx
 	EndProjectSection
