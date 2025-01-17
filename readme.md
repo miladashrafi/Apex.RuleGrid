@@ -29,6 +29,7 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 ### Services
 
 - **MongoDbService.cs**: Provides methods to interact with MongoDB, including saving and retrieving rule sets.
+- **RuleEngineService.cs**: This is the core service of rule processor and applies rules to objects.
 
 ### Models
 
