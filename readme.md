@@ -94,13 +94,13 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 ### API Endpoints
 
 #### Upload Rule Set
-- **Endpoint**: `POST /api/v1/RuleGrid/upload-ruleset`
+- **Endpoint**: `POST /api/v1/RuleEngine/upload-ruleset`
 - **Description**: Uploads an Excel file containing rule sets.
 - **Request**: `multipart/form-data` with one or more files.
 
 #### Apply Rules
 
-- **Endpoint**: `POST /api/v1/RuleGrid/apply-rules`
+- **Endpoint**: `POST /api/v1/RuleEngine/apply-rules`
 - **Description**: Applies rules to a set of objects.
 - **Request**: JSON body containing `ClassName` and `Objects`.
 
@@ -134,12 +134,12 @@ graph TD
 
 ### Uploading a Rule Set
 
-1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleGrid/upload-ruleset`.
+1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleEngine/upload-ruleset`.
 2. Attach the Excel file(s) containing the rule sets.
 
 ### Applying Rules
 
-1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleGrid/apply-rules`.
+1. Use a tool like Postman to send a `POST` request to `/api/v1/RuleEngine/apply-rules`.
 2. Provide the `ClassName` and `Objects` in the request body.
 
 ## Contributing
