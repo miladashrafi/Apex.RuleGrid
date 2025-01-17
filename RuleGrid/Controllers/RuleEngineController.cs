@@ -135,7 +135,10 @@ public class RuleEngineController : ControllerBase
         {
             var fieldName = GetRuleField(ruleSet, condition.Key, "#FieldName");
             if (string.IsNullOrWhiteSpace(fieldName) || !obj.TryGetProperty(fieldName, out var prop))
+            {
+                conditionMet = false;
                 continue;
+            }
 
             var operatorPhrase = GetRuleField(ruleSet, condition.Key, "#Operator");
             var conditionValue = condition.Value;
