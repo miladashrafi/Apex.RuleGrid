@@ -66,7 +66,7 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 > - The `X` in `Condition_X` and `Action_X` represents the index of the condition or action.  
 > - The `ConditionsOperator` column in the Metadata sheet should contain one of the following values: `AND`, `OR`.  
 > - The `Priority` column in the Metadata sheet should contain an integer value.  
-> - The `GeneralAction` column in the Metadata sheet should contain one of the following values: `SetAppliedRules`.  
+> - The `GeneralAction` column in the Metadata sheet can contain one of the following values: `SetAppliedRules`.  
 > - The `Index` column in the Rules sheet should contain an integer value or `#FieldName`/`#Operator` for first two rows.  
 > - The `Condition_X` column in the Rules sheet should contain the condition expression.  
 > - The `Action_X` column in the Rules sheet should contain the action expression.  

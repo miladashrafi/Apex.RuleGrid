@@ -2,7 +2,7 @@
 using MongoDB.Driver;
 using RuleGrid.Models;
 
-namespace RuleGrid;
+namespace RuleGrid.Services;
 public class MongoDbService
 {
     private readonly IMongoCollection<RuleSetDbModel> _collection;

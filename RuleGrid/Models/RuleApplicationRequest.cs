@@ -5,7 +5,6 @@ namespace RuleGrid.Models;
 
 public class RuleApplicationRequest : IExamplesProvider<RuleApplicationRequest>
 {
-
     public string ClassName { get; set; }
     public IList<JsonElement> Objects { get; set; }
 
