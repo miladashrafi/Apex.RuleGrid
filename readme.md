@@ -1,4 +1,5 @@
-# RuleGrid
+# Apex.RuleGrid  
+FREE Excel-based minimal and simple rule-engine that can be integrated into any application.
 
 ## Overview
 
