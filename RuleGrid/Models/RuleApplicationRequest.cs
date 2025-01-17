@@ -19,7 +19,8 @@ public class RuleApplicationRequest : IExamplesProvider<RuleApplicationRequest>
                         ""Origin"": ""THR"",
                         ""Destination"": ""MHD"",
                         ""MaxPrice"": null,
-                        ""MaxPriceSet"": false
+                        ""MaxPriceSet"": false,
+                        ""CabinClass"": ""E""
                     }")
                 },
                 {
@@ -27,7 +28,8 @@ public class RuleApplicationRequest : IExamplesProvider<RuleApplicationRequest>
                         ""Origin"": ""THR"",
                         ""Destination"": ""ISF"",
                         ""MaxPrice"": null,
-                        ""MaxPriceSet"": false
+                        ""MaxPriceSet"": false,
+                        ""CabinClass"": ""E""
                     }")
                 }
             }
