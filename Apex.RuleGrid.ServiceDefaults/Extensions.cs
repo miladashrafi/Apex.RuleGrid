@@ -8,6 +8,8 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Events;
 
 namespace Apex.RuleGrid.ServiceDefaults;
 
@@ -18,6 +20,7 @@ public static class Extensions
 {
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        builder.ConfigureSerilog();
         builder.ConfigureOpenTelemetry();
 
         builder.AddDefaultHealthChecks();
@@ -42,8 +45,64 @@ public static class Extensions
         return builder;
     }
 
+    public static TBuilder ConfigureSerilog<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        builder.Services.AddSerilog(configuration =>
+        {
+            configuration
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .Enrich.WithEnvironmentName()
+                .Enrich.WithProcessName()
+                .Enrich.WithProcessId()
+                .Enrich.WithThreadId()
+                .Enrich.WithCorrelationId()
+                .Enrich.WithProperty("ApplicationName", builder.Environment.ApplicationName)
+                .Enrich.WithProperty("EnvironmentName", builder.Environment.EnvironmentName);
+
+            // Configure default sinks if not specified in configuration
+            if (!HasSinksConfigured(builder.Configuration))
+            {
+                configuration
+                    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}")
+                    .WriteTo.File(
+                        path: "logs/app-.log",
+                        rollingInterval: RollingInterval.Day,
+                        retainedFileCountLimit: 7,
+                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
+                    .WriteTo.Seq(serverUrl: builder.Configuration["Serilog:SeqServerUrl"] ?? "http://localhost:5341");
+            }
+
+            // Set minimum level
+            var minimumLevel = builder.Configuration["Serilog:MinimumLevel:Default"];
+            if (Enum.TryParse<LogEventLevel>(minimumLevel, out var level))
+            {
+                configuration.MinimumLevel.Is(level);
+            }
+            else
+            {
+                configuration.MinimumLevel.Information();
+            }
+
+            // Override specific namespaces
+            configuration
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning);
+        });
+
+        return builder;
+    }
+
+    private static bool HasSinksConfigured(Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        return configuration.GetSection("Serilog:WriteTo").GetChildren().Any();
+    }
+
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        // Note: Serilog is configured separately and will be the primary logging provider
+        // OpenTelemetry logging is configured to work alongside Serilog
         builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.IncludeFormattedMessage = true;

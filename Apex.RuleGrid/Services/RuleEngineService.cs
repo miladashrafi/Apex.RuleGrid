@@ -3,6 +3,8 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Apex.RuleGrid.Exceptions;
 using System.Text.Json;
+using Serilog;
+using ILogger = Serilog.ILogger;
 
 namespace Apex.RuleGrid.Services
 {
@@ -11,11 +13,15 @@ namespace Apex.RuleGrid.Services
     {
         private readonly MongoDbService _dbService;
         private readonly ReteNetwork _reteNetwork;
+        private readonly ILogger _logger;
 
-        public RuleEngineService(MongoDbService dbService)
+        public RuleEngineService(MongoDbService dbService, ILogger logger)
         {
             _dbService = dbService;
             _reteNetwork = new ReteNetwork();
+            _logger = logger.ForContext<RuleEngineService>();
+            
+            _logger.Debug("RuleEngineService initialized");
         }
         private static string ConvertExcelToJson(XLWorkbook workbook)
         {
@@ -76,80 +82,167 @@ namespace Apex.RuleGrid.Services
 
         public async Task UploadRuleSet([FromForm] IList<IFormFile> files)
         {
+            _logger.Information("Processing {FileCount} rule set files", files.Count);
+            
             foreach (var file in files)
             {
                 if (file == null || file.Length == 0)
+                {
+                    _logger.Warning("Invalid file encountered: {FileName}, Length: {FileLength}", 
+                        file?.FileName ?? "null", file?.Length ?? 0);
                     throw new RuleGridException("Invalid file.");
+                }
 
-                using var stream = file.OpenReadStream();
-                using var workbook = new XLWorkbook(stream);
-                var json = ConvertExcelToJson(workbook);
-                var dbModel = ConvertToDbModel(json);
-                _reteNetwork.AddRuleSet(dbModel);
-                await _dbService.SaveJsonAsync(dbModel);
+                _logger.Information("Processing Excel file {FileName} with size {FileSize} bytes", 
+                    file.FileName, file.Length);
+
+                try
+                {
+                    using var stream = file.OpenReadStream();
+                    using var workbook = new XLWorkbook(stream);
+                    
+                    _logger.Debug("Successfully loaded Excel workbook from {FileName}", file.FileName);
+                    
+                    var json = ConvertExcelToJson(workbook);
+                    _logger.Debug("Converted Excel to JSON for {FileName}", file.FileName);
+                    
+                    var dbModel = ConvertToDbModel(json);
+                    _logger.Information("Converted to database model. RuleSetId: {RuleSetId}, RuleCount: {RuleCount}",
+                        dbModel.Metadata.Id, dbModel.Rules.Count);
+                    
+                    _reteNetwork.AddRuleSet(dbModel);
+                    _logger.Debug("Added rule set to RETE network for {RuleSetId}", dbModel.Metadata.Id);
+                    
+                    await _dbService.SaveJsonAsync(dbModel);
+                    _logger.Information("Successfully processed and saved rule set from {FileName}", file.FileName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, "Failed to process file {FileName}", file.FileName);
+                    throw;
+                }
             }
+            
+            _logger.Information("Successfully processed all {FileCount} rule set files", files.Count);
         }
 
         public async Task<IList<JsonElement>> ApplyRulesWithRete(RuleApplicationRequest request)
         {
-            var ruleSets = await _dbService.GetRulesAsync(request.ClassName);
-            if (!ruleSets.Any()) return request.Objects;
-
-            var results = new List<JsonElement>();
-
-            foreach (var ruleSet in ruleSets)
+            _logger.Information("Applying rules using RETE algorithm for {ClassName} to {ObjectCount} objects", 
+                request.ClassName, request.Objects.Count);
+                
+            try
             {
-                _reteNetwork.AddRuleSet(ruleSet);
-
-                foreach (var obj in request.Objects)
+                var ruleSets = await _dbService.GetRulesAsync(request.ClassName);
+                if (!ruleSets.Any())
                 {
-                    var jsonObject = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.GetRawText());
-                    if (jsonObject == null) continue;
-
-                    var matchedRules = _reteNetwork.Match(jsonObject, ruleSet.Metadata.ConditionsOperator);
-                    foreach (var rule in matchedRules)
-                    {
-                        ApplyActions(ruleSet, rule, jsonObject, obj);
-                    }
-
-                    results.Add(JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(jsonObject)));
+                    _logger.Warning("No rule sets found for class {ClassName}", request.ClassName);
+                    return request.Objects;
                 }
-            }
 
-            return results;
+                _logger.Information("Found {RuleSetCount} rule sets for {ClassName}", 
+                    ruleSets.Count, request.ClassName);
+
+                var results = new List<JsonElement>();
+
+                foreach (var ruleSet in ruleSets)
+                {
+                    _reteNetwork.AddRuleSet(ruleSet);
+                    _logger.Debug("Added rule set {RuleSetId} to RETE network", ruleSet.Metadata.Id);
+
+                    foreach (var obj in request.Objects)
+                    {
+                        var jsonObject = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.GetRawText());
+                        if (jsonObject == null) continue;
+
+                        var matchedRules = _reteNetwork.Match(jsonObject, ruleSet.Metadata.ConditionsOperator);
+                        _logger.Debug("RETE matched {MatchedRuleCount} rules for object in rule set {RuleSetId}", 
+                            matchedRules.Count(), ruleSet.Metadata.Id);
+                            
+                        foreach (var rule in matchedRules)
+                        {
+                            ApplyActions(ruleSet, rule, jsonObject, obj);
+                            _logger.Debug("Applied RETE-matched rule {RuleIndex} from rule set {RuleSetId}", 
+                                rule.Index, ruleSet.Metadata.Id);
+                        }
+
+                        results.Add(JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(jsonObject)));
+                    }
+                }
+
+                _logger.Information("Successfully applied rules using RETE for {ClassName}. Processed {ObjectCount} objects", 
+                    request.ClassName, request.Objects.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to apply rules using RETE for {ClassName}", request.ClassName);
+                throw;
+            }
         }
 
 
         public async Task<IList<JsonElement>> ApplyRules([FromBody] RuleApplicationRequest request)
         {
-            var ruleSets = await _dbService.GetRulesAsync(request.ClassName);
-            if (!ruleSets.Any())
-                return request.Objects;
-
-            var results = new List<JsonElement>();
-
-            foreach (var ruleSet in ruleSets)
+            _logger.Information("Applying rules for {ClassName} to {ObjectCount} objects", 
+                request.ClassName, request.Objects.Count);
+                
+            try
             {
-                var filteredRules = ruleSet.Rules.Where(r => r.Index?.Contains("#") == false);
-
-                foreach (var obj in request.Objects)
+                var ruleSets = await _dbService.GetRulesAsync(request.ClassName);
+                if (!ruleSets.Any())
                 {
-                    var jsonObject = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.GetRawText());
-                    if (jsonObject == null) continue;
-
-                    foreach (var rule in filteredRules)
-                    {
-                        if (EvaluateConditions(ruleSet, rule, jsonObject, obj))
-                        {
-                            ApplyActions(ruleSet, rule, jsonObject, obj);
-                        }
-                    }
-
-                    results.Add(JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(jsonObject)));
+                    _logger.Warning("No rule sets found for class {ClassName}", request.ClassName);
+                    return request.Objects;
                 }
-            }
 
-            return results;
+                _logger.Information("Found {RuleSetCount} rule sets for {ClassName}", 
+                    ruleSets.Count, request.ClassName);
+
+                var results = new List<JsonElement>();
+
+                foreach (var ruleSet in ruleSets)
+                {
+                    var filteredRules = ruleSet.Rules.Where(r => r.Index?.Contains("#") == false);
+                    _logger.Debug("Processing {RuleCount} rules for rule set {RuleSetId}", 
+                        filteredRules.Count(), ruleSet.Metadata.Id);
+
+                    foreach (var obj in request.Objects)
+                    {
+                        var jsonObject = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.GetRawText());
+                        if (jsonObject == null) continue;
+
+                        int appliedRuleCount = 0;
+                        foreach (var rule in filteredRules)
+                        {
+                            if (EvaluateConditions(ruleSet, rule, jsonObject, obj))
+                            {
+                                ApplyActions(ruleSet, rule, jsonObject, obj);
+                                appliedRuleCount++;
+                                _logger.Debug("Applied rule {RuleIndex} from rule set {RuleSetId}", 
+                                    rule.Index, ruleSet.Metadata.Id);
+                            }
+                        }
+
+                        if (appliedRuleCount > 0)
+                        {
+                            _logger.Debug("Applied {AppliedRuleCount} rules to object in rule set {RuleSetId}", 
+                                appliedRuleCount, ruleSet.Metadata.Id);
+                        }
+
+                        results.Add(JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(jsonObject)));
+                    }
+                }
+
+                _logger.Information("Successfully applied rules for {ClassName}. Processed {ObjectCount} objects", 
+                    request.ClassName, request.Objects.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to apply rules for {ClassName}", request.ClassName);
+                throw;
+            }
         }
 
         private bool EvaluateConditions(RuleSetDbModel ruleSet, Rule rule, Dictionary<string, object> jsonObject, JsonElement obj)
