@@ -11,6 +11,10 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 - Convert Excel data to JSON format.
 - Store and retrieve rule sets from MongoDB.
 - Apply rules to objects based on specified conditions and actions.
+- **Structured logging** with Serilog for enhanced observability and debugging.
+- **Request/Response tracing** with correlation IDs for distributed system monitoring.
+- **Performance monitoring** with detailed metrics for rule processing operations.
+- **Configurable log outputs** including console, file, and Seq integration.
 
 ## Technologies Used
 
@@ -20,6 +24,8 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 - MongoDB
 - ClosedXML (for Excel file handling)
 - Swashbuckle (for API documentation)
+- Serilog (for structured logging)
+- .NET Aspire (for observability and service defaults)
 
 ## Project Structure
 
@@ -87,11 +93,164 @@ The RuleGrid project is a .NET 8 **Excel-Based** application designed to manage 
 #### Sheet two (Rules):
 ![Excel](excel.png)
 
+## Logging
+
+The RuleGrid project uses **Serilog** for structured logging throughout the application. This provides rich, searchable log data with contextual information.
+
+### Configuration
+
+Logging is configured through the `appsettings.json` files and integrated with the .NET Aspire service defaults.
+
+#### Basic Configuration
+
+The application supports multiple sinks (output destinations):
+
+- **Console**: Formatted console output for development
+- **File**: Rolling daily log files stored in the `logs/` directory
+- **Seq**: Structured logging server (optional, requires Seq to be running)
+
+#### Configuration Example
+
+```json
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.AspNetCore": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties} {NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "logs/app-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 7,
+          "outputTemplate": "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj} {Properties} {NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "Seq",
+        "Args": {
+          "serverUrl": "http://localhost:5341"
+        }
+      }
+    ],
+    "Enrich": ["FromLogContext", "WithEnvironmentName", "WithProcessName", "WithProcessId", "WithThreadId", "WithCorrelationId"],
+    "Properties": {
+      "ApplicationName": "Apex.RuleGrid"
+    }
+  }
+}
+```
+
+#### Environment-Specific Configuration
+
+- **Development**: Debug level logging with Seq integration
+- **Production**: Information level logging with file and console output
+
+### Enrichers
+
+The application automatically enriches all log events with:
+
+- **Environment Name**: Development, Production, etc.
+- **Process Information**: Process name and ID
+- **Thread ID**: Current thread identifier
+- **Correlation ID**: Request correlation for tracing
+- **Application Name**: Set to "Apex.RuleGrid"
+
+### Structured Logging Features
+
+#### API Request/Response Logging
+
+All API endpoints automatically log:
+- Request parameters and payloads
+- Processing time and outcomes
+- Error conditions with full exception details
+- Rule application statistics
+
+#### Database Operations
+
+MongoDB operations include:
+- Connection details (without sensitive information)
+- Query performance metrics
+- Data modification tracking
+- Error handling and retry logic
+
+#### Rule Engine Processing
+
+Rule processing logs provide:
+- Rule set metadata and statistics
+- Individual rule execution results
+- Performance metrics
+- Excel file processing details
+
+### Log Examples
+
+#### Successful Rule Application
+```
+[14:16:32 INF] Applying rules for "Customer" to 5 objects {ClassName="Customer", ObjectCount=5, EnvironmentName="Development"}
+[14:16:32 INF] Found 2 rule sets for class "Customer" {RuleSetCount=2, ClassName="Customer"}
+[14:16:32 DBG] Applied rule "1" from rule set "CUST-001" {RuleIndex="1", RuleSetId="CUST-001"}
+[14:16:32 INF] Successfully applied rules for "Customer". Processed 5 objects {ClassName="Customer", ObjectCount=5}
+```
+
+#### File Upload Processing
+```
+[14:16:30 INF] Processing 1 rule set files {FileCount=1}
+[14:16:30 INF] Processing Excel file "customer-rules.xlsx" with size 15432 bytes {FileName="customer-rules.xlsx", FileSize=15432}
+[14:16:30 INF] Converted to database model. RuleSetId: "CUST-001", RuleCount: 12 {RuleSetId="CUST-001", RuleCount=12}
+[14:16:30 INF] Successfully processed and saved rule set from "customer-rules.xlsx" {FileName="customer-rules.xlsx"}
+```
+
+### Integration with OpenTelemetry
+
+Serilog works alongside the existing OpenTelemetry configuration:
+- Trace correlation across distributed services
+- Metrics integration for performance monitoring
+- Compatibility with .NET Aspire observability stack
+
+### Seq Integration (Optional)
+
+For enhanced log analysis, you can run Seq locally:
+
+```bash
+docker run --name seq -d --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:80 datalust/seq:latest
+```
+
+Then access the Seq UI at `http://localhost:5341` to:
+- Search and filter structured logs
+- Create custom dashboards
+- Set up alerting rules
+- Analyze application performance trends
+
+### Log File Management
+
+- Log files are created daily in the `logs/` directory
+- Files are retained for 7 days by default
+- File names follow the pattern: `app-YYYY-MM-DD.log`
+- Logs are automatically excluded from version control
+
 ### Running the Application
 
 1. Open the solution in Visual Studio 2022.
 2. Build the solution to restore the dependencies.
-3. Run the application.
+3. Ensure MongoDB is running (see MongoDB Configuration above).
+4. Run the application.
+
+The application will start with structured logging enabled. You can monitor logs in:
+- Console output (real-time)
+- Log files in the `logs/` directory
+- Seq dashboard (if configured)
 
 ### API Endpoints
 
