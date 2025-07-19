@@ -9,9 +9,9 @@ using ILogger = Serilog.ILogger;
 
 namespace Apex.RuleGrid.Attributes;
 
-public class StandardApiResponseActionFilterAttribute(ILogger logger) : ActionFilterAttribute
+public class StandardApiResponseActionFilterAttribute(ILogger<StandardApiResponseActionFilterAttribute> logger) : ActionFilterAttribute
 {
-    private readonly ILogger _logger = logger.ForContext<StandardApiResponseActionFilterAttribute>();
+    private readonly ILogger<StandardApiResponseActionFilterAttribute> _logger = logger;
 
     public override void OnActionExecuted(ActionExecutedContext context)
     {
